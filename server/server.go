@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/lazhari/blog-grpc/server/helpers"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
@@ -16,6 +18,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/lazhari/blog-grpc/blogpb"
+	"github.com/lazhari/blog-grpc/server/models"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
@@ -26,48 +29,18 @@ var collection *mongo.Collection
 
 type server struct{}
 
-type blogItem struct {
-	ID       primitive.ObjectID `bson:"_id,omitempty"`
-	AuthorID string             `bson:"author_id"`
-	Content  string             `bson:"content"`
-	Title    string             `bson:"title"`
-}
-
 func (*server) CreateBlog(ctx context.Context, req *blogpb.CreateBlogRequest) (*blogpb.CreateBlogResponse, error) {
 	fmt.Println("Create blog request")
 	blog := req.GetBlog()
 
-	data := blogItem{
-		AuthorID: blog.GetAuthorId(),
-		Title:    blog.GetTitle(),
-		Content:  blog.GetContent(),
-	}
-
-	res, err := collection.InsertOne(context.Background(), data)
+	blogItem, err := helpers.CreateBlogPost(collection, blog)
 
 	if err != nil {
-		return nil, status.Errorf(
-			codes.Internal,
-			fmt.Sprintf("Error inserting the blog item into the db: %v", err),
-		)
-	}
-
-	oid, ok := res.InsertedID.(primitive.ObjectID)
-
-	if !ok {
-		return nil, status.Errorf(
-			codes.Internal,
-			fmt.Sprintf("Cannot convert to OID: %v", err),
-		)
+		return nil, err
 	}
 
 	return &blogpb.CreateBlogResponse{
-		Blog: &blogpb.Blog{
-			Id:       oid.Hex(),
-			AuthorId: blog.GetAuthorId(),
-			Title:    blog.GetTitle(),
-			Content:  blog.GetContent(),
-		},
+		Blog: blogItem,
 	}, nil
 
 }
@@ -85,7 +58,7 @@ func (*server) ReadBlog(ctx context.Context, req *blogpb.ReadBlogRequest) (*blog
 	}
 
 	// Create an empty struct
-	data := &blogItem{}
+	data := &models.BlogItem{}
 	filter := bson.M{"_id": oid}
 
 	res := collection.FindOne(context.Background(), filter)
@@ -98,17 +71,8 @@ func (*server) ReadBlog(ctx context.Context, req *blogpb.ReadBlogRequest) (*blog
 	}
 
 	return &blogpb.ReadBlogResponse{
-		Blog: dataToBlogPb(data),
+		Blog: helpers.DataToBlogPb(data),
 	}, nil
-}
-
-func dataToBlogPb(data *blogItem) *blogpb.Blog {
-	return &blogpb.Blog{
-		Id:       data.ID.Hex(),
-		AuthorId: data.AuthorID,
-		Content:  data.Content,
-		Title:    data.Title,
-	}
 }
 
 func (*server) UpdateBlog(ctx context.Context, req *blogpb.UpdateBlogRequest) (*blogpb.UpdateBlogResponse, error) {
@@ -124,7 +88,7 @@ func (*server) UpdateBlog(ctx context.Context, req *blogpb.UpdateBlogRequest) (*
 	}
 
 	// Create an empty struct
-	data := &blogItem{}
+	data := &models.BlogItem{}
 	filter := bson.M{"_id": oid}
 
 	res := collection.FindOne(context.Background(), filter)
@@ -150,7 +114,7 @@ func (*server) UpdateBlog(ctx context.Context, req *blogpb.UpdateBlogRequest) (*
 	}
 
 	return &blogpb.UpdateBlogResponse{
-		Blog: dataToBlogPb(data),
+		Blog: helpers.DataToBlogPb(data),
 	}, nil
 }
 
@@ -201,7 +165,7 @@ func (*server) ListBlog(req *blogpb.ListBlogRequest, stream blogpb.BlogService_L
 	defer cursor.Close(context.Background())
 
 	for cursor.Next(context.Background()) {
-		data := &blogItem{}
+		data := &models.BlogItem{}
 		err := cursor.Decode(data)
 
 		if err != nil {
@@ -211,7 +175,7 @@ func (*server) ListBlog(req *blogpb.ListBlogRequest, stream blogpb.BlogService_L
 			)
 		}
 		stream.Send(&blogpb.ListBlogResponse{
-			Blog: dataToBlogPb(data),
+			Blog: helpers.DataToBlogPb(data),
 		})
 	}
 
