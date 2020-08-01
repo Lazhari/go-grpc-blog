@@ -22,6 +22,7 @@ type Server struct {
 	Collection *mongo.Collection
 }
 
+// CreateBlog Create a new blog post
 func (s *Server) CreateBlog(ctx context.Context, req *blogpb.CreateBlogRequest) (*blogpb.CreateBlogResponse, error) {
 	fmt.Println("Create blog request")
 	blog := req.GetBlog()
@@ -38,6 +39,7 @@ func (s *Server) CreateBlog(ctx context.Context, req *blogpb.CreateBlogRequest) 
 
 }
 
+// ReadBlog Get a single post by ID
 func (s *Server) ReadBlog(ctx context.Context, req *blogpb.ReadBlogRequest) (*blogpb.ReadBlogResponse, error) {
 	fmt.Println("ReadBlog invoked!")
 	blogID := req.GetBlogId()
@@ -68,6 +70,7 @@ func (s *Server) ReadBlog(ctx context.Context, req *blogpb.ReadBlogRequest) (*bl
 	}, nil
 }
 
+// UpdateBlog Update a blog post by ID
 func (s *Server) UpdateBlog(ctx context.Context, req *blogpb.UpdateBlogRequest) (*blogpb.UpdateBlogResponse, error) {
 	fmt.Println("UpdateBlog invoked")
 	blog := req.GetBlog()
@@ -111,6 +114,7 @@ func (s *Server) UpdateBlog(ctx context.Context, req *blogpb.UpdateBlogRequest) 
 	}, nil
 }
 
+// DeleteBlog Delete a blog post by ID
 func (s *Server) DeleteBlog(ctx context.Context, req *blogpb.DeleteBlogRequest) (*blogpb.DeleteBlogResponse, error) {
 	fmt.Println("DeleteBlog invoked!")
 	oid, err := primitive.ObjectIDFromHex(req.GetBlogId())
@@ -145,6 +149,7 @@ func (s *Server) DeleteBlog(ctx context.Context, req *blogpb.DeleteBlogRequest) 
 	}, nil
 }
 
+// ListBlog Get all blog posts
 func (s *Server) ListBlog(req *blogpb.ListBlogRequest, stream blogpb.BlogService_ListBlogServer) error {
 	fmt.Println("ListBlog invoked")
 	cursor, err := s.Collection.Find(context.Background(), bson.M{})
