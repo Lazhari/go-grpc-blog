@@ -2,7 +2,7 @@ package helpers
 
 import (
 	"github.com/lazhari/blog-grpc/blogpb"
-	"github.com/lazhari/blog-grpc/server/models"
+	"github.com/lazhari/blog-grpc/internal/models"
 )
 
 // DataToBlogPb transform document data to Blog protocol buffers

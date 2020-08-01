@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/lazhari/blog-grpc/blogpb"
-	"github.com/lazhari/blog-grpc/server/models"
+	"github.com/lazhari/blog-grpc/internal/models"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
